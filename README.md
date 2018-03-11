@@ -1,4 +1,3 @@
-# HeroicDreamer.github.io
 DataVis
 
 Bowen Sun, M4119c
