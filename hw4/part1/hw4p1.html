@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Homework 4 (part 1)</title>
+<style>
+  .link {
+    stroke: #EEE;
+    stroke-width: .8px;
+  }
+
+  .link.highlight{
+    stroke: gray;
+    stroke-width: 4px;
+  }
+
+  .link-hide{
+    stroke: none;
+    stroke-width: 0px;
+  }
+
+  .node {
+    fill: white;
+    stroke: #000;
+    stroke-width: .9px;
+  }
+
+  .node:hover {
+    fill: black;
+  }
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+  <form>
+  Layout:
+    <label><input type="radio" name="layout" value="force" checked> Force</label>
+    <label><input type="radio" name="layout" value="random" > Random</label>
+    <label><input type="radio" name="layout" value="circular"> Circular</label>  
+    <label><input type="radio" name="layout" value="line"> Line</label>
+    <label><input type="radio" name="layout" value="line_cat"> Line by Category</label>
+  </form>
+  <form>
+  Color:
+    <label><input type="radio" name="color" value="nocolor" checked> None</label>
+    <label><input type="radio" name="color" value="color_cat" > Category</label>
+  </form>
+  <form>
+  Size:
+    <label><input type="radio" name="size" value="nosize" checked> None</label>
+    <label><input type="radio" name="size" value="size_cat" > Category</label>
+  </form>
+  <form>
+  Sort(Linear):
+  <select onchange='sortBy(this.value)'>
+    <option value="gdp">GDP</option>
+    <option value="population" selected>Population</option>
+    <option value='continent'>Continent</option>
+    <option value='life_expectancy'>Life Expectancy</option>
+    <option value='latitude'>latitude</option>
+    <option value='longitude'>longitude</option>
+    <option value='name'>name</option>
+  </select>
+  </form>
+  <form>
+  Scatterplot Axis:
+  <select onchange='axisBy(this.value)'>
+    <option value="geo">Geometry</option>
+    <option value="pg" selected>Population & GDP</option>
+  </select>
+  </form>
+  <form>
+    Group By(Circular):
+    <select onchange='groupBy(this.value)'>
+      <option value="none">None</option>
+      <option value="continent">Continent</option>
+    </select>
+  </form>
+  <form>
+    Show links:
+    <select onchange='showLinks(this.value)'>
+      <option value="show">Show</option>
+      <option value="hide">Hide</option>
+    </select>
+  </form>
+  
+<script>
+
+var margin = {top: 50, bottom: 10, left: 300, right: 40};
+var width = 900 - margin.left - margin.right;
+var height = 900 - margin.top - margin.bottom;
+var layout;
+
+var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+var fill = d3.scale.category10();
+
+var graph = {nodes: [], links: []};
+
+var nb_nodes = 120, nb_cat = 10;
+
+var node_scale = d3.scale.linear().domain([0, nb_cat]).range([5, 50])
+var force = d3.layout.force()
+      .size([width, height])
+      .charge(-50)
+      .linkDistance(10)
+      .on("tick", tick)
+      .on("start", function(d) {})
+      .on("end", function(d) {})
+
+var last_key;
+function sortBy(key){
+    last_key = key;
+    graph.nodes.sort((a, b) => d3.descending(a[key], b[key]));
+    graph.nodes.forEach((d, i) => d.sortIndex = i);
+    window[layout || "line_layout"]();
+}
+
+function axisBy(key){
+    var x, y, xscale, yscale;
+    force.stop();
+    if(key == "geo") y = "latitude", x = "longitude";
+    if(key == "pg") x = "gdp", y = "population";
+
+    xscale = d3.scale.linear().range([0, width]).domain([
+      d3.min(graph.nodes, el => el[x]),
+      d3.max(graph.nodes, el => el[x]),
+    ]);
+    yscale = d3.scale.linear().range([height, 0]).domain([
+      d3.min(graph.nodes, el => el[y]),
+      d3.max(graph.nodes, el => el[y]),
+    ]);
+    graph.nodes.forEach(function(d, i){
+        d.y = yscale(d[y]);
+        d.x = xscale(d[x]);
+        console.log(d.x, d.y)
+    });
+    graph_update(500);
+}
+
+  // Generate the force layout
+
+  function tick(d) {
+    graph_update(0);
+  }
+
+  function random_layout() {
+    
+    force.stop();
+
+    graph.nodes.forEach(function(d, i) {
+      d.x = width/4 + 2*width*Math.random()/4;
+      d.y = height/4 + 2*height*Math.random()/4;
+    })
+    
+    graph_update(500);
+  }
+
+  function force_layout() {
+
+  force.nodes(graph.nodes)
+        .links(graph.links)
+        .start();
+  }
+
+
+  function line_layout() {
+
+    force.stop();
+
+    graph.nodes.forEach(function(d, i) {
+      
+      d.y = i % 40 * 20 + 20;
+      d.x = Math.floor(i / 40) * 150 + 100;
+    })
+
+    graph_update(500);
+  }
+
+  function line_layout() {
+
+force.stop();
+
+graph.nodes.forEach(function(d, i) {
+  
+  d.y = i % 40 * 20 + 20;
+  d.x = Math.floor(i / 40) * 150 + 100;
+})
+layout = "line_layout"
+graph_update(500);
+}
+
+  function line_cat_layout() {
+
+    force.stop();
+
+    graph.nodes.forEach(function(d, i) {
+      d.y = height/2 + d.cat*20;
+    })
+
+    graph_update(500);
+  }
+
+  function groupBy(value){
+    circular_layout(value);
+  }
+
+  function circular_layout(value) {
+
+    force.stop();
+    if(value == "none") value = "";
+    var grouped;
+    if(value){
+      grouped = d3.nest()
+                      .key(x => x[value])
+                      .rollup(d => d )
+                      .entries(graph.nodes)
+                      
+      grouped.forEach((x, i) => x.key = i);
+    }else{
+      grouped = d3.nest()
+                      .key(x => 1)
+                      .rollup(d => d )
+                      .entries(graph.nodes);
+    }
+
+    var groupnumber = grouped.length 
+    var allarc = d3.svg.arc().outerRadius(width * 2 / 3);
+    var centers = []
+    for(var i = 0; i < groupnumber; ++i){
+      centers[i] = {x: 0, y: 0, index: i}
+    }
+    
+    centers = d3.layout.pie()
+    .sort(function(a, b) { return a.index - b.index;})
+    .value(function(d, i) { 
+                return 1;  // We want an equal pie share/slice for each point
+    })(centers)
+    .map((d, i) => {
+      d.innerRadius = 0;
+      d.outerRadius = width * 2 / 3;
+      d.data.x = allarc.centroid(d)[0] + width / 2;
+      d.data.y = allarc.centroid(d)[1] + height / 2;
+      return d.data;
+    });
+
+    grouped.forEach( group => {
+      var r = Math.min(height, width) / (groupnumber > 1 ? 4 : 2);
+      var key = group.key;
+      var arc = d3.svg.arc()
+              .outerRadius(r);
+
+      var pie = d3.layout.pie();
+      if(last_key)
+              pie = pie.sort(function(a, b) { return a[last_key] - [last_key];}) // Sorting by categories
+            
+              pie = pie.value(function(d, i) { 
+                return 1;  // We want an equal pie share/slice for each point
+              });
+
+      var centerx = groupnumber == 1 ? width / 2 : centers[group.key].x
+      var centery = groupnumber == 1 ? height / 2 : centers[group.key].y
+      
+      group.values = pie(group.values).map(function(d, i) {
+        // Needed to caclulate the centroid
+        d.innerRadius = 0;
+        d.outerRadius = r;
+        d.sortedIndex = -1;
+        if(groupnumber == 1){
+          // Building the data object we are going to return
+          d.data.x = arc.centroid(d)[0]+width/2;
+          d.data.y = arc.centroid(d)[1]+height/2;
+        }else{
+
+          d.data.x = arc.centroid(d)[0]+centerx;
+          d.data.y = arc.centroid(d)[1]+centery;
+        }
+
+        return d.data;
+      })
+    });
+    layout = "circular_layout"
+
+    graph_update(500);
+  }
+
+  
+  function category_color() {
+
+    d3.selectAll("circle").transition().duration(500)
+                          .style("fill", function(d) { 
+                            return fill(d.cat); 
+                          });
+  }
+
+  function category_size() {
+
+    d3.selectAll("circle").transition().duration(500)
+                          .attr("r", function(d) { 
+                            return Math.sqrt(node_scale(d.cat)); 
+                          });
+  }
+
+  function showLinks(value){
+    if(value == "show"){
+      link.classed("link-hide", false)
+    }else{
+      link.classed("link-hide", true)
+    }
+  }
+
+  function graph_update(duration) {
+
+    link.transition().duration(duration)
+        .attr("x1", function(d) { return d.target.x; })
+        .attr("y1", function(d) { return d.target.y; })
+        .attr("x2", function(d) { return d.source.x; })
+        .attr("y2", function(d) { return d.source.y; });
+
+    if(layout == "circular_layout"){
+      var l = node.size();
+      node.transition().duration(duration)
+        .attr("transform", function(d, i) { 
+          if(d.sortIndex != -1){
+            per = Math.floor((d.sortIndex || i) / l * 360);
+            per -= 90;
+            if(per == -90) per = 90; else if(per == 90) per = -90;
+            return "translate("+d.x+","+d.y+") rotate(" + 0 + ")"; 
+          }else{
+            node.transition().duration(duration)
+        .attr("transform", function(d, i) { 
+          return "translate("+d.x+","+d.y+")"; 
+        });
+          }
+        });
+    }else{
+      node.transition().duration(duration)
+        .attr("transform", function(d, i) { 
+          return "translate("+d.x+","+d.y+")"; 
+        });
+    }
+  }
+
+  function links(c){
+    if(!c){
+      link.classed("highlight", false).attr("z-index", 0).classed("link-hide", false)
+    }else{
+      link.filter(d => d.target.name == c.name || d.source.name == c.name)
+          .classed("highlight", true).attr("z-index", 100)
+      link.filter(d => !(d.target.name == c.name || d.source.name == c.name))
+      .classed("link-hide", true)
+    }
+  }
+
+var link, node, hist, linkdata;
+d3.json("data/countries_1995_2012.json", function(nodes){
+  hist = nodes;
+  d3.json("data/countries_2012.json", function(nodes){
+    graph.nodes = nodes;
+    
+    var hist_byname = {}, hist_byid = {};
+    nodes.forEach(d => hist_byname[d.name] = d)
+    hist.forEach(d => hist_byid[d.country_id] = d)
+    
+    linkdata = [];
+    hist.forEach(d => {
+      d.years.find(x => x.year == 2012).top_partners.forEach(s => {
+        linkdata.push({source: hist_byname[hist_byid[d.country_id].name], target: hist_byname[hist_byid[s.country_id].name]});
+      })
+    })
+    d3.select("input[value=\"force\"]").on("click", force_layout);
+    d3.select("input[value=\"random\"]").on("click", random_layout);
+    d3.select("input[value=\"line\"]").on("click", line_layout);
+    d3.select("input[value=\"line_cat\"]").on("click", line_cat_layout);
+    d3.select("input[value=\"circular\"]").on("click", circular_layout);
+
+    d3.select("input[value=\"nocolor\"]").on("click", function() {
+      d3.selectAll("circle").transition().duration(500).style("fill", "#66CC66");
+    })
+
+    d3.select("input[value=\"color_cat\"]").on("click", category_color);
+
+    d3.select("input[value=\"nosize\"]").on("click", function() {
+      d3.selectAll("circle").transition().duration(500).attr("r", 5);
+    })
+
+    d3.select("input[value=\"size_cat\"]").on("click", category_size);
+    
+    link = svg.selectAll(".link")
+                  .data(linkdata);
+
+    link.enter().append("line")
+        .attr("class", "link")
+        
+    
+    node = svg.selectAll(".node")
+                  .data(graph.nodes)
+                .enter()
+                  .append("g").attr("class", "node");
+
+    node.append("circle")
+        .attr("r", 5)
+    node.append("text").text(d => d.name).attr('x', 10).style("font-size", "12px").attr("stroke", "transparent").attr("fill", "black");
+    node.on('mouseover', (d, i) => links(d));
+    node.on('mouseout', (d, i) => links(''));
+    force_layout();
+  })
+});
+
+
+</script>
+</body>
+</html>
