@@ -1,0 +1,88 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>VIS 101 Homework</title>
+       
+    <style>
+            @font-face {
+                font-family: Open Sans;
+                src: url(https://fonts.google.com/specimen/Open+Sans?selection.family=Open+Sans );
+            }
+            h1{
+                color: #1946ba;
+            }
+            .quote{
+                margin: 10px;
+                border: 1px solid #F5F5F5;
+                padding: 0 10px;
+                
+            }
+            .quote blockquote{
+                border-left: 4px solid black;
+                padding-left: 5px;
+            }
+            body{
+                max-width: 960px;
+            }
+            button{
+                border: none;
+                color: white;
+                text-align: center;
+                padding: 5px;
+            }
+            .changeQuote{
+                background: #ec0b43;
+            }
+            .changeQuoteMore{
+                background: #1946ba;
+            }
+            .sort{
+                background: #1946ba;
+            }
+    </style>
+    <script>
+        function getPiece(){
+            var q = window.quotes[~~(Math.random() * window.quotes.length)]
+            return `${q.quoteText}” – ${q.quoteAuthor}`;
+        }
+        fetch("https://raw.githubusercontent.com/4skinSkywalker/Database-Quotes-JSON/master/quotes.json")
+             .then(resp => resp.json())
+             .then(function(data){
+                 window.quotes = data;
+                 document.querySelector(".changeQuote").addEventListener('click', function(){
+                    document.querySelector(".quote blockquote").innerText = getPiece();
+                 });
+                 document.querySelector(".changeQuoteMore").addEventListener('click', function(){
+                    document.querySelectorAll(".morequote blockquote").forEach(x => x.innerText = getPiece());
+                 });
+
+                 document.querySelector(".sort").addEventListener('click', function(){
+                    var text = [].map.call(document.querySelectorAll(".morequote blockquote"), x => x.innerText).sort();
+                    document.querySelectorAll(".morequote blockquote").forEach((x, i) => x.innerText = text[i]);
+                 })
+             });
+        
+    </script>
+</head>
+<body>
+
+    <H1>First VIS101 Homework</H1>
+    <div class="quote">
+        <H2 class='title'>Quote Of the Day:</H2>
+        <blockquote>All successful men and women are big dreamers. They imagine what their future could be, ideal in every respect, and then they work every day toward their distant vision, that goal or purpose.” – Brian Tracy</blockquote>
+    </div>
+    <button class='changeQuote'>Change Quote of The Day</button>
+
+    <div class="quote morequote">
+            <H2 class='title'>Quote Of the Task 3.4</H2>
+            <H4><i>Add several quotes and add button for sorting</i></H4>
+            <blockquote>All successful men and women are big dreamers. They imagine what their future could be, ideal in every respect, and then they work every day toward their distant vision, that goal or purpose.” – Brian Tracy</blockquote>
+            <blockquote>All successful men and women are big dreamers. They imagine what their future could be, ideal in every respect, and then they work every day toward their distant vision, that goal or purpose.” – Brian Tracy</blockquote>
+            <blockquote>All successful men and women are big dreamers. They imagine what their future could be, ideal in every respect, and then they work every day toward their distant vision, that goal or purpose.” – Brian Tracy</blockquote>
+    </div>
+    <button class='changeQuoteMore'>Change More Quotes</button>
+    <button class='sort'>Sort</button>
+</body>
+</html>
