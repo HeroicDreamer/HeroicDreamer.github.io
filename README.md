@@ -21,4 +21,4 @@ bwsun0508@gmail.com, heroicdreamer@niuitmo.ru
 
 [HW4 part 2](http://HeroicDreamer.github.io/hw4/part2/hw4p2.html)
 
-[Project](http://HeroicDreamer.github.io/project)
+[Project](http://HeroicDreamer.github.io/Project)
